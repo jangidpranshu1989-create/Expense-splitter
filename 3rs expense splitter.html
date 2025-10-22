@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Premium Expense Splitter — Advanced</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<style>
+  :root{
+    --bg:#0f0f12; --card:#17171a; --muted:#bfc3c7; --accent:#7c4dff;
+    --surface:#1b1b1f; --glass: rgba(255,255,255,0.03);
+  }
+  *{box-sizing:border-box;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial; color:var(--muted);}
+  html,body{height:100%;margin:0;background:
+    radial-gradient(1200px 600px at -10% -10%, rgba(124,77,255,0.06), transparent),
+    radial-gradient(900px 500px at 110% 110%, rgba(0,200,255,0.02), transparent), var(--bg); -webkit-font-smoothing:antialiased;}
+  .app {max-width:1100px;margin:18px auto;padding:16px;}
+  header{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:12px;}
+  h1{font-size:20px;color:#fff;margin:0;}
+  .controls{display:flex;gap:8px;align-items:center;}
+  #searchBar{background:var(--surface);border:1px solid rgba(255,255,255,0.03);padding:10px 12px;border-radius:10px;color:var(--muted);min-width:180px;}
+  .currency-select, .clear-btn{background:var(--surface);border-radius:10px;padding:8px 10px;border:1px solid rgba(255,255,255,0.03);color:var(--muted);}
+  .clear-btn{background:transparent;color:#ff8a80;border:1px solid rgba(255,138,128,0.12);cursor:pointer}
+  /* Dashboard */
+  main{display:flex;gap:16px;flex-wrap:wrap;}
+  .left{flex:1 1 420px;min-width:280px;}
+  .right{flex:0 0 360px;min-width:260px;}
+  .group-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;}
+  .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent);border-radius:12px;padding:12px;border:1px solid rgba(255,255,255,0.03);box-shadow:0 6px 18px rgba(0,0,0,0.4);transition:transform .18s;}
+  .card:hover{transform:translateY(-6px)}
+  .card h3{margin:0 0 6px 0;color:#fff;font-size:16px}
+  .card .meta{font-size:13px;color:var(--muted);margin-bottom:8px}
+  .card .actions{display:flex;gap:8px;flex-wrap:wrap}
+  .btn{background:linear-gradient(90deg,var(--accent),#5ec8ff);color:#061017;padding:8px 10px;border-radius:8px;border:none;cursor:pointer;font-weight:600}
+  .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--muted)}
+  .danger{background:linear-gradient(90deg,#ff6b6b,#ff8a80);color:#111}
+  /* Floating FAB */
+  .fab{position:fixed;right:20px;bottom:20px;width:64px;height:64px;border-radius:999px;background:var(--accent);display:flex;align-items:center;justify-content:center;color:#fff;font-size:30px;box-shadow:0 10px 30px rgba(124,77,255,0.18);border:none;cursor:pointer}
+  /* Right panel - charts & actions */
+  .panel {position:sticky;top:18px;display:flex;flex-direction:column;gap:12px;}
+  .small {font-size:13px;color:var(--muted)}
+  .chart-card{height:260px;padding:12px}
+  /* Modal (center) */
+  .modal{display:none;position:fixed;inset:0;background:linear-gradient(rgba(2,6,23,0.6),rgba(2,6,23,0.6));align-items:center;justify-content:center;z-index:50}
+  .modal.show{display:flex}
+  .sheet{background:var(--card);border-radius:14px;width:94%;max-width:720px;padding:14px;border:1px solid rgba(255,255,255,0.03);box-shadow:0 20px 60px rgba(2,6,23,0.7)}
+  .form-row{display:flex;gap:8px;margin-bottom:8px}
+  .form-row .col{flex:1}
+  label{font-size:12px;color:var(--muted);display:block;margin-bottom:6px}
+  input[type="text"], input[type="number"], select, textarea{width:100%;padding:10px;border-radius:10px;background:var(--surface);border:1px solid rgba(255,255,255,0.03);color:var(--muted)}
+  .small-btn{padding:6px 8px;border-radius:8px;background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--muted);cursor:pointer}
+  .member-list {display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+  .member-pill{background:var(--glass);padding:6px 8px;border-radius:999px;color:#fff;font-weight:600;border:1px solid rgba(255,255,255,0.02)}
+  /* Expense drawer (scrollable) */
+  .drawer{max-height:260px;overflow:auto;padding:8px;border-radius:8px;background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent);border:1px solid rgba(255,255,255,0.02)}
+  .expense-row{display:flex;align-items:center;justify-content:space-between;padding:8px;border-radius:8px;margin-bottom:8px;background:rgba(0,0,0,0.15)}
+  .expense-row .left{display:flex;gap:8px;align-items:center}
+  .category-dot{width:12px;height:12px;border-radius:4px;display:inline-block;margin-right:6px}
+  .muted{color:var(--muted);font-size:13px}
+  .settle-list{background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent);padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.02)}
+  /* responsive */
+  @media(max-width:900px){.right{flex-basis:100%}.left{flex-basis:100%}.panel{position:relative;top:auto}}
+  footer{margin-top:18px;font-size:12px;color:var(--muted);text-align:center}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>Premium Expense Splitter</h1>
+    <div class="controls">
+      <input id="searchBar" placeholder="Search groups or members..." oninput="renderDashboard()" />
+      <select id="currency" class="currency-select" title="Currency" onchange="saveSettings()">
+        <option value="₹">INR (₹)</option>
+        <option value="$">$ USD</option>
+        <option value="€">€ EUR</option>
+        <option value="£">£ GBP</option>
+        <option value="¥">¥ JPY</option>
+      </select>
+      <button class="clear-btn" onclick="clearAll()">Reset</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="left">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div class="small">Groups</div>
+        <div class="small muted">Tap a group to manage</div>
+      </div>
+
+      <div id="groupList" class="group-list"></div>
+    </section>
+
+    <aside class="right panel">
+      <div class="card chart-card">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div><strong style="color:#fff">Group Overview</strong><div class="small muted">Category breakdown</div></div>
+          <div class="small muted">Updated live</div>
+        </div>
+        <canvas id="catBar" style="width:100%;height:170px;margin-top:8px"></canvas>
+      </div>
+
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div><strong style="color:#fff">Quick Actions</strong><div class="small muted">Shortcuts</div></div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+          <button class="btn" onclick="openGroupModal()">Add Group</button>
+          <button class="btn ghost" onclick="applyAllRecurrences()">Apply Recurrence</button>
+          <button class="btn ghost" onclick="exportAllPDF()">Export All PDF</button>
+        </div>
+      </div>
+
+      <div class="card settle-list" id="settlementCard">
+        <div><strong style="color:#fff">Quick Settlement</strong></div>
+        <div id="settlementList" style="margin-top:8px" class="small muted">Select a group to calculate.</div>
+      </div>
+    </aside>
+  </main>
+
+  <footer>Built for offline use • Data stored locally in your browser</footer>
+</div>
+
+<!-- Floating Add button -->
+<button class="fab" title="Add" onclick="openGroupModal()">+</button>
+
+<!-- MODALS -->
+<div id="groupModal" class="modal"><div class="sheet">
+  <div style="display:flex;justify-content:space-between;align-items:center"><h3 style="margin:0;color:#fff">Create / Edit Group</h3><button class="small-btn" onclick="closeModal('groupModal')">Close</button></div>
+  <div style="margin-top:10px">
+    <label>Group name</label>
+    <input id="groupName" placeholder="Trip to Goa, Roommates, etc." />
+    <div style="margin-top:8px;display:flex;gap:8px">
+      <button class="btn" onclick="saveGroup()">Save</button>
+      <button class="btn ghost" onclick="addMemberInline()" title="Quick add member">Quick Add Member</button>
+      <input id="quickMember" placeholder="Member name" style="flex:1;padding:10px;border-radius:8px;background:var(--surface);border:1px solid rgba(255,255,255,0.03)" />
+    </div>
+    <div style="margin-top:12px">
+      <label>Members</label>
+      <div id="groupMembers" class="member-list"></div>
+    </div>
+  </div>
+</div></div>
+
+<div id="manageModal" class="modal"><div class="sheet">
+  <div style="display:flex;justify-content:space-between;align-items:center">
+    <div><h3 id="manageTitle" style="margin:0;color:#fff">Manage Group</h3><div id="manageSub" class="small muted"></div></div>
+    <div>
+      <button class="small-btn" onclick="closeModal('manageModal')">Close</button>
+    </div>
+  </div>
+
+  <div style="margin-top:12px;display:flex;gap:10px;align-items:center">
+    <button class="btn" onclick="openExpenseModal()">Add Expense</button>
+    <button class="btn ghost" onclick="openMembersEditor()">Edit Members</button>
+    <button class="btn ghost" onclick="showGroupSummary()">Summary</button>
+    <button class="btn ghost danger" onclick="deleteCurrentGroup()">Delete</button>
+  </div>
+
+  <div style="margin-top:12px">
+    <label>Expenses</label>
+    <div id="expenseDrawer" class="drawer"></div>
+  </div>
+
+</div></div>
+
+<div id="expenseModal" class="modal"><div class="sheet">
+  <div style="display:flex;justify-content:space-between;align-items:center">
+    <h3 style="margin:0;color:#fff" id="expenseModalTitle">Add Expense</h3>
+    <div><button class="small-btn" onclick="closeModal('expenseModal')">Close</button></div>
+  </div>
+
+  <div style="margin-top:10px">
+    <label>Expense name</label>
+    <input id="expName" placeholder="Dinner, Taxi, Rent..." />
+
+    <div class="form-row" style="margin-top:6px">
+      <div class="col">
+        <label>Amount</label>
+        <input id="expAmount" type="number" min="0" step="0.01" placeholder="0.00" />
+      </div>
+      <div class="col">
+        <label>Payer</label>
+        <select id="expPayer"></select>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="col">
+        <label>Category</label>
+        <select id="expCategory"></select>
+      </div>
+      <div class="col">
+        <label>Recurring</label>
+        <select id="expRecur">
+          <option value="none">None</option>
+          <option value="weekly">Weekly</option>
+          <option value="monthly">Monthly</option>
+        </select>
+      </div>
+    </div>
+
+    <div style="margin-top:8px;display:flex;gap:8px;align-items:center">
+      <label style="min-width:80px">Split</label>
+      <button class="small-btn" id="equalSplitBtn" onclick="setEqualSplit()">Equal</button>
+      <button class="small-btn" id="customSplitBtn" onclick="setCustomSplit()">Custom</button>
+      <div class="small muted" style="margin-left:auto">Total shares must sum to 100%</div>
+    </div>
+
+    <div id="splitInputs" style="margin-top:10px"></div>
+
+    <div style="margin-top:12px;display:flex;gap:8px">
+      <button class="btn" onclick="saveExpense()">Save Expense</button>
+      <button class="btn ghost" onclick="clearExpenseForm()">Reset</button>
+    </div>
+  </div>
+
+</div></div>
+
+<div id="membersModal" class="modal"><div class="sheet">
+  <div style="display:flex;justify-content:space-between;align-items:center"><h3 style="margin:0;color:#fff">Edit Members</h3><button class="small-btn" onclick="closeModal('membersModal')">Close</button></div>
+  <div style="margin-top:10px">
+    <label>New member</label>
+    <div style="display:flex;gap:8px">
+      <input id="newMemberName" placeholder="Name" />
+      <button class="btn" onclick="addMemberToCurrent()">Add</button>
+    </div>
+    <div style="margin-top:12px">
+      <div id="membersEditorList" class="member-list"></div>
+    </div>
+  </div>
+</div></div>
+
+<div id="summaryModal" class="modal"><div class="sheet">
+  <div style="display:flex;justify-content:space-between;align-items:center"><h3 style="margin:0;color:#fff">Group Summary</h3><div><button class="small-btn" onclick="closeModal('summaryModal')">Close</button></div></div>
+  <div style="margin-top:8px">
+    <div id="summaryInfo" class="small muted"></div>
+    <div style="margin-top:8px" id="pairwiseList"></div>
+    <div style="margin-top:12px">
+      <button class="btn" onclick="exportGroupPDF()">Export PDF with List</button>
+    </div>
+  </div>
+</div></div>
+
+<!-- Libraries -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<script>
+/* ------------- Data & Utilities ------------- */
+let DB = JSON.parse(localStorage.getItem('premium_expense_db') || 'null') || {
+  groups: [],
+  categories: [
+    {id:'food',name:'Food', color:'#FF8A65'},
+    {id:'travel',name:'Travel', color:'#4DB6AC'},
+    {id:'rent',name:'Rent', color:'#9575CD'},
+    {id:'bills',name:'Bills', color:'#F06292'},
+    {id:'other',name:'Other', color:'#90A4AE'}
+  ],
+  settings: {currency:'₹'}
+};
+function saveDB(){ localStorage.setItem('premium_expense_db', JSON.stringify(DB)); renderDashboard(); }
+const currencyEl = document.getElementById('currency');
+currencyEl.value = DB.settings.currency;
+currencyEl.onchange = () => { DB.settings.currency = currencyEl.value; saveDB(); }
+function uid(){ return Math.random().toString(36).slice(2,9); }
+function fmt(v){ return DB.settings.currency + Number(v).toFixed(2); }
+
+/* ------------- Render: Dashboard & Charts ------------- */
+const groupListEl = document.getElementById('groupList');
+const searchInput = document.getElementById('searchBar');
+let activeGroupIndex = null;
+function renderDashboard(){
+  groupListEl.innerHTML = '';
+  const q = searchInput.value.trim().toLowerCase();
+  DB.groups.forEach((g, i) => {
+    if(q){
+      const inName = g.name.toLowerCase().includes(q);
+      const inMembers = g.members.some(m => m.name.toLowerCase().includes(q));
+      if(!inName && !inMembers) return;
+    }
+    const card = document.createElement('div'); card.className='card';
+    const total = g.expenses.reduce((s,e)=>s+Number(e.amount),0);
+    const membersCount = g.members.length;
+    card.innerHTML = `
+      <h3>${escapeHtml(g.name)}</h3>
+      <div class="meta">${membersCount} member(s) • Total ${fmt(total)}</div>
+      <div class="actions">
+        <button class="btn" onclick="openManage(${i})">Open</button>
+        <button class="btn ghost" onclick="duplicateGroup(${i})">Duplicate</button>
+        <button class="btn ghost" onclick="downloadGroupJSON(${i})">Export JSON</button>
+        <button class="btn danger" onclick="deleteGroup(${i})">Delete</button>
+      </div>
+    `;
+    groupListEl.appendChild(card);
+  });
+  updateCategoryChart();
+  renderSettlementPanel();
+}
+
+/* ------------- Group CRUD ------------- */
+function openGroupModal(editIndex = null){
+  document.getElementById('groupModal').classList.add('show');
+  document.getElementById('groupName').value = editIndex!==null ? DB.groups[editIndex].name : '';
+  currentEditingGroup = editIndex;
+  renderGroupMembersList(editIndex);
+}
+let currentEditingGroup = null;
+function saveGroup(){
+  const name = document.getElementById('groupName').value.trim();
+  if(!name) return alert('Group name is required.');
+  if(currentEditingGroup===null){
+    DB.groups.push({ id: uid(), name, members: [], expenses: []});
+  } else {
+    DB.groups[currentEditingGroup].name = name;
+  }
+  saveDB();
+  closeModal('groupModal');
+}
+function renderGroupMembersList(index){
+  const el = document.getElementById('groupMembers');
+  el.innerHTML = '';
+  if(index===null || DB.groups[index]===undefined) return;
+  DB.groups[index].members.forEach((m,mi)=>{
+    const pill = document.createElement('div'); pill.className='member-pill';
+    pill.innerHTML = `${escapeHtml(m.name)} <button class="small-btn" style="margin-left:8px" onclick="removeMember(${index},${mi})">x</button>`;
+    el.appendChild(pill);
+  });
+}
+function addMemberInline(){
+  const val = document.getElementById('quickMember').value.trim();
+  if(!val) return alert('Enter a name');
+  if(currentEditingGroup===null) {
+    // create group first
+    const name = document.getElementById('groupName').value.trim() || 'New Group';
+    const idx = DB.groups.push({id:uid(), name, members:[], expenses:[]}) - 1;
+    currentEditingGroup = idx;
+  }
+  DB.groups[currentEditingGroup].members.push({id:uid(), name:val});
+  document.getElementById('quickMember').value='';
+  renderGroupMembersList(currentEditingGroup);
+  saveDB();
+}
+function removeMember(groupIndex, memberIndex){
+  if(!confirm('Remove member?')) return;
+  DB.groups[groupIndex].members.splice(memberIndex,1);
+  saveDB();
+  renderGroupMembersList(groupIndex);
+}
+function closeModal(id){ document.getElementById(id).classList.remove('show'); currentEditingGroup=null; }
+
+/* ------------- Manage Group (open) ------------- */
+function openManage(index){
+  activeGroupIndex = index;
+  const g = DB.groups[index];
+  document.getElementById('manageTitle').innerText = g.name;
+  document.getElementById('manageSub').innerText = `${g.members.length} member(s) • ${g.expenses.length} expense(s)`;
+  document.getElementById('manageModal').classList.add('show');
+  renderExpenseDrawer();
+}
+function deleteCurrentGroup(){ if(!confirm('Delete this group?')) return; DB.groups.splice(activeGroupIndex,1); saveDB(); closeModal('manageModal'); }
+
+/* ------------- Expense Drawer & CRUD ------------- */
+function renderExpenseDrawer(){
+  const el = document.getElementById('expenseDrawer'); el.innerHTML = '';
+  const g = DB.groups[activeGroupIndex];
+  if(!g) return;
+  // show newest first
+  [...g.expenses].reverse().forEach((e, idxReverse)=>{
+    const idx = g.expenses.length - 1 - idxReverse;
+    const row = document.createElement('div'); row.className='expense-row';
+    const cat = DB.categories.find(c=>c.id===e.category) || {color:'#999',name:'Unk'};
+    row.innerHTML = `
+      <div class="left">
+        <span class="category-dot" style="background:${cat.color}"></span>
+        <div>
+          <div style="font-weight:700;color:#fff">${escapeHtml(e.name)}</div>
+          <div class="muted">${escapeHtml(e.paidBy)} • ${fmt(e.amount)} • ${cat.name} ${e.recur!=='none'? '• '+e.recur:''}</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <button class="small-btn" onclick="editExpense(${idx})">Edit</button>
+        <button class="small-btn" onclick="deleteExpense(${idx})">Delete</button>
+      </div>
+    `;
+    el.appendChild(row);
+  });
+}
+
+/* Add / Edit expense modal logic */
+let editingExpenseIndex = null;
+function openExpenseModal(editIndex = null){
+  if(activeGroupIndex===null) return alert('Open a group first.');
+  editingExpenseIndex = editIndex;
+  const g = DB.groups[activeGroupIndex];
+
+  document.getElementById('expenseModalTitle').innerText = editIndex===null ? 'Add Expense' : 'Edit Expense';
+  // fill payers
+  const payerSel = document.getElementById('expPayer');
+  payerSel.innerHTML = g.members.map(m=>`<option value="${m.id}">${escapeHtml(m.name)}</option>`).join('');
+  // categories
+  const catSel = document.getElementById('expCategory');
+  catSel.innerHTML = DB.categories.map(c=>`<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
+  if(editIndex===null){
+    document.getElementById('expName').value=''; document.getElementById('expAmount').value=''; document.getElementById('expRecur').value='none';
+    setEqualSplit();
+  } else {
+    const e = g.expenses[editIndex];
+    document.getElementById('expName').value = e.name;
+    document.getElementById('expAmount').value = e.amount;
+    document.getElementById('expPayer').value = e.paidById;
+    document.getElementById('expCategory').value = e.category;
+    document.getElementById('expRecur').value = e.recur || 'none';
+    if(e.split && e.splitCustom){
+      setCustomSplit();
+      populateCustomSplits(e.split);
+    } else {
+      setEqualSplit();
+    }
+  }
+  document.getElementById('expenseModal').classList.add('show');
+}
+function clearExpenseForm(){ editingExpenseIndex=null; openExpenseModal(null); }
+function setEqualSplit(){
+  document.getElementById('equalSplitBtn').style.border = '1px solid rgba(255,255,255,0.08)';
+  document.getElementById('customSplitBtn').style.border = 'none';
+  buildSplitInputs('equal');
+}
+function setCustomSplit(){
+  document.getElementById('customSplitBtn').style.border = '1px solid rgba(255,255,255,0.08)';
+  document.getElementById('equalSplitBtn').style.border = 'none';
+  buildSplitInputs('custom');
+}
+function buildSplitInputs(mode){
+  const container = document.getElementById('splitInputs'); container.innerHTML = '';
+  const g = DB.groups[activeGroupIndex];
+  if(!g) return;
+  g.members.forEach(m=>{
+    const wrapper = document.createElement('div'); wrapper.style.display='flex'; wrapper.style.gap='8px'; wrapper.style.alignItems='center'; wrapper.style.marginBottom='6px';
+    const lbl = document.createElement('div'); lbl.style.width='120px'; lbl.innerText = m.name; lbl.style.color='#fff'; lbl.style.fontWeight='600';
+    const input = document.createElement('input'); input.type='number'; input.min='0'; input.step='0.01'; input.value = mode==='equal' ? '' : '0';
+    input.dataset.memberId = m.id;
+    input.style.padding='8px'; input.style.borderRadius='8px'; input.style.flex='1'; input.style.background='var(--surface)'; input.style.border='1px solid rgba(255,255,255,0.03)';
+    input.placeholder = mode==='equal' ? 'auto (equal)' : 'share amount or percentage';
+    wrapper.appendChild(lbl); wrapper.appendChild(input);
+    container.appendChild(wrapper);
+  });
+  container.dataset.mode = mode;
+}
+function populateCustomSplits(splitObj){
+  const inputs = document.querySelectorAll('#splitInputs input');
+  inputs.forEach(inp=>{
+    const id = inp.dataset.memberId;
+    if(splitObj[id]!==undefined) inp.value = splitObj[id];
+  });
+}
+
+/* Save expense */
+function saveExpense(){
+  const name = document.getElementById('expName').value.trim();
+  const amount = parseFloat(document.getElementById('expAmount').value);
+  const paidById = document.getElementById('expPayer').value;
+  const category = document.getElementById('expCategory').value;
+  const recur = document.getElementById('expRecur').value || 'none';
+  if(!name || !amount || !paidById) return alert('Complete required fields.');
+  // compute split
+  const container = document.getElementById('splitInputs');
+  const mode = container.dataset.mode || 'equal';
+  const members = DB.groups[activeGroupIndex].members;
+  const split = {};
+  if(mode === 'equal'){
+    // equal share per member (amount proportion)
+    const equalAmount = Number((amount / members.length).toFixed(2));
+    members.forEach(m => split[m.id] = equalAmount);
+  } else {
+    // custom: user may input absolute amounts or percentages
+    // If all values sum to ~100 or sum equals amount, interpret accordingly.
+    const inputs = document.querySelectorAll('#splitInputs input');
+    let sum = 0; let allNonEmpty = true;
+    inputs.forEach(inp=>{
+      if(inp.value.trim()==='') allNonEmpty=false;
+      sum += Number(inp.value || 0);
+    });
+    // Heuristics:
+    // - If sum is approximately 100 -> treat as percentages
+    // - if sum approximately equals amount -> treat as amounts
+    // - otherwise, if some empty treat empties as 0 and scale to amount proportionally
+    if(Math.abs(sum-100) <= 0.5){
+      inputs.forEach(inp => { split[inp.dataset.memberId] = Number(((amount * (Number(inp.value)/100))).toFixed(2)); });
+    } else if(Math.abs(sum - amount) <= 0.5){
+      inputs.forEach(inp => { split[inp.dataset.memberId] = Number((Number(inp.value)).toFixed(2)); });
+    } else {
+      // scale proportional to entered values; if all zeros or empty, fallback to equal
+      const raw = []; let rawSum=0;
+      inputs.forEach(inp=>{ const v = Number(inp.value || 0); raw.push({id:inp.dataset.memberId, v}); rawSum+=v; });
+      if(rawSum === 0){
+        const equalAmount = Number((amount / members.length).toFixed(2));
+        members.forEach(m => split[m.id] = equalAmount);
+      } else {
+        raw.forEach(r => split[r.id] = Number(((amount * (r.v/rawSum))).toFixed(2)));
+      }
+    }
+  }
+  // Ensure rounding doesn't break total: adjust last member
+  const ids = Object.keys(split);
+  let totalAssigned = ids.reduce((s,id)=>s+Number(split[id]||0),0);
+  totalAssigned = Number(totalAssigned.toFixed(2));
+  if(totalAssigned !== Number(amount.toFixed(2))){
+    const diff = Number((amount - totalAssigned).toFixed(2));
+    split[ids[ids.length-1]] = Number((Number(split[ids[ids.length-1]]||0) + diff).toFixed(2));
+  }
+
+  // Build expense object
+  const expenseObj = {
+    id: editingExpenseIndex===null ? uid() : DB.groups[activeGroupIndex].expenses[editingExpenseIndex].id,
+    name, amount: Number(amount), paidById, paidBy: DB.groups[activeGroupIndex].members.find(m=>m.id===paidById).name,
+    category, split, splitCustom: (container.dataset.mode==='custom'), recur
+  };
+
+  if(editingExpenseIndex===null){
+    DB.groups[activeGroupIndex].expenses.push(expenseObj);
+  } else {
+    DB.groups[activeGroupIndex].expenses[editingExpenseIndex] = expenseObj;
+  }
+  saveDB();
+  closeModal('expenseModal');
+  renderExpenseDrawer();
+}
+
+/* Edit & Delete */
+function editExpense(idx){
+  editingExpenseIndex = idx;
+  openExpenseModal(idx);
+}
+function deleteExpense(idx){ if(!confirm('Delete expense?')) return; DB.groups[activeGroupIndex].expenses.splice(idx,1); saveDB(); renderExpenseDrawer(); }
+
+/* ------------- Members Editor ------------- */
+function openMembersEditor(){
+  if(activeGroupIndex===null) return alert('Open a group.');
+  document.getElementById('membersModal').classList.add('show');
+  renderMembersEditor();
+}
+function renderMembersEditor(){
+  const area = document.getElementById('membersEditorList'); area.innerHTML='';
+  DB.groups[activeGroupIndex].members.forEach((m, idx)=>{
+    const el = document.createElement('div'); el.className='member-pill';
+    el.innerHTML = `${escapeHtml(m.name)} <button class="small-btn" onclick="renameMember(${idx})">✎</button> <button class="small-btn" onclick="removeMember(${activeGroupIndex},${idx})">x</button>`;
+    area.appendChild(el);
+  });
+}
+function addMemberToCurrent(){
+  const nm = document.getElementById('newMemberName').value.trim();
+  if(!nm) return alert('Name required');
+  DB.groups[activeGroupIndex].members.push({id:uid(), name:nm});
+  document.getElementById('newMemberName').value='';
+  saveDB();
+  renderMembersEditor(); renderGroupMembersList(activeGroupIndex); renderExpenseDrawer();
+}
+function renameMember(idx){
+  const name = prompt('New name', DB.groups[activeGroupIndex].members[idx].name);
+  if(!name) return;
+  const id = DB.groups[activeGroupIndex].members[idx].id;
+  // update name and any expense paidBy
+  DB.groups[activeGroupIndex].members[idx].name = name;
+  DB.groups[activeGroupIndex].expenses.forEach(e=>{ if(e.paidById===id) e.paidBy = name; });
+  saveDB(); renderMembersEditor(); renderExpenseDrawer();
+}
+
+/* ------------- Summaries & Settlements ------------- */
+function computeBalance(group){
+  const members = group.members;
+  const balances = {};
+  members.forEach(m=>balances[m.id] = 0);
+  group.expenses.forEach(e=>{
+    // payer paid full amount
+    balances[e.paidById] += e.amount;
+    // reduce the shares each member should cover
+    Object.keys(e.split).forEach(mid => balances[mid] -= Number(e.split[mid] || 0));
+  });
+  // balances positive -> receive; negative -> give
+  return balances;
+}
+
+/* Produce pairwise minimal settlement (greedy) */
+function computeSettlements(group){
+  const balances = computeBalance(group);
+  const creditors = []; const debtors = [];
+  for(const id in balances){
+    const val = Number(balances[id].toFixed(2));
+    if(val > 0) creditors.push({id, amount: val});
+    else if(val < 0) debtors.push({id, amount: -val}); // store positive owed
+  }
+  creditors.sort((a,b)=>b.amount-a.amount);
+  debtors.sort((a,b)=>b.amount-b.amount);
+  const settlements = [];
+  let i=0,j=0;
+  while(i<debtors.length && j<creditors.length){
+    const d = debtors[i], c = creditors[j];
+    const settled = Math.min(d.amount, c.amount);
+    settlements.push({from: d.id, to: c.id, amount: Number(settled.toFixed(2))});
+    d.amount -= settled; c.amount -= settled;
+    if(Math.abs(d.amount) < 0.009) i++;
+    if(Math.abs(c.amount) < 0.009) j++;
+  }
+  return settlements;
+}
+
+function showGroupSummary(){
+  const g = DB.groups[activeGroupIndex];
+  const balances = computeBalance(g);
+  const settlements = computeSettlements(g);
+  // display balances (Give / Receive)
+  const info = document.getElementById('summaryInfo');
+  const lines = [];
+  for(const id in balances){
+    const m = g.members.find(mm=>mm.id===id);
+    const v = Number(balances[id].toFixed(2));
+    if(v < 0) lines.push(`${escapeHtml(m.name)} — Give ${fmt(Math.abs(v))}`);
+    else lines.push(`${escapeHtml(m.name)} — Receive ${fmt(v)}`);
+  }
+  info.innerHTML = lines.map(l=>`<div>${l}</div>`).join('');
+  // pairwise
+  const pairwise = document.getElementById('pairwiseList');
+  if(settlements.length===0) pairwise.innerHTML = '<div class="muted">All settled.</div>';
+  else pairwise.innerHTML = settlements.map(s=>{
+    const from = g.members.find(mm=>mm.id===s.from).name;
+    const to = g.members.find(mm=>mm.id===s.to).name;
+    return `<div style="padding:6px;border-radius:8px;margin-bottom:6px;background:rgba(255,255,255,0.02)">${escapeHtml(from)} → ${escapeHtml(to)} : <strong style="color:#fff">${fmt(s.amount)}</strong></div>`;
+  }).join('');
+  document.getElementById('summaryModal').classList.add('show');
+}
+
+/* Render quick settlement on right panel for selected or last group */
+function renderSettlementPanel(){
+  const card = document.getElementById('settlementList');
+  if(DB.groups.length===0){ card.innerHTML = '<div class="muted">No groups yet.</div>'; return; }
+  const g = DB.groups[0]; // show for first group by default for quick glance
+  const settlements = computeSettlements(g);
+  if(settlements.length===0) card.innerHTML = '<div class="muted">All settled in first group.</div>';
+  else card.innerHTML = settlements.slice(0,6).map(s=>{
+    const from = g.members.find(mm=>mm.id===s.from).name;
+    const to = g.members.find(mm=>mm.id===s.to).name;
+    return `<div style="margin-bottom:6px">${escapeHtml(from)} → ${escapeHtml(to)} : ${fmt(s.amount)}</div>`;
+  }).join('');
+}
+
+/* ------------- Category Bar Chart ------------- */
+let catChart = null;
+function updateCategoryChart(){
+  const ctx = document.getElementById('catBar').getContext('2d');
+  // aggregate across all groups for overview
+  const totals = {};
+  DB.categories.forEach(c=> totals[c.id] = 0);
+  DB.groups.forEach(g=>{
+    g.expenses.forEach(e=>{
+      totals[e.category] = (totals[e.category] || 0) + Number(e.amount);
+    });
+  });
+  const labels = DB.categories.map(c=>c.name);
+  const data = DB.categories.map(c=>Number((totals[c.id]||0).toFixed(2)));
+  const colors = DB.categories.map(c=>c.color);
+
+  if(catChart) catChart.destroy();
+  catChart = new Chart(ctx, {
+    type: 'bar',
+    data: { labels, datasets:[{ label:'Amount', data, backgroundColor: colors }] },
+    options: {
+      plugins:{legend:{display:false}},
+      scales:{ y:{ ticks:{color:'#bbb'} }, x:{ ticks:{color:'#bbb'} } }
+    }
+  });
+}
+
+/* ------------- Recurrence (apply) ------------- */
+function applyRecurrenceForGroup(groupIndex){
+  const g = DB.groups[groupIndex];
+  const added = [];
+  g.expenses.forEach(e=>{
+    if(e.recur && e.recur !== 'none'){
+      // generate a new expense object identical except new id and flag indicating derived from recurrence
+      const newE = JSON.parse(JSON.stringify(e));
+      newE.id = uid();
+      newE.name = e.name + ' (recur)';
+      added.push(newE);
+    }
+  });
+  if(added.length>0){
+    g.expenses = g.expenses.concat(added);
+    saveDB();
+    if(activeGroupIndex===groupIndex) renderExpenseDrawer();
+  }
+}
+function applyAllRecurrences(){
+  DB.groups.forEach((g, idx)=> applyRecurrenceForGroup(idx));
+  alert('Applied recurrence to all groups (created next occurrences).');
+}
+
+/* ------------- Export PDF & JSON ------------- */
+async function exportGroupPDF(){
+  if(activeGroupIndex===null) return alert('Open a group first.');
+  const g = DB.groups[activeGroupIndex];
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  doc.setFontSize(14); doc.text(g.name, 10, 18);
+  doc.setFontSize(11);
+  let y = 28;
+  doc.text('Members:', 10, y); y+=6;
+  g.members.forEach(m => { doc.text('- ' + m.name, 12, y); y+=6; });
+  y+=4;
+  doc.text('Expenses:', 10, y); y+=6;
+  g.expenses.forEach(e=>{
+    if(y > 270){ doc.addPage(); y = 20; }
+    doc.text(`${e.name} • ${fmt(e.amount)} • ${e.paidBy}`, 12, y);
+    y+=6;
+  });
+  doc.save(`${g.name.replace(/\s+/g,'_')}_summary.pdf`);
+}
+
+function exportAllPDF(){
+  // simple export: create one PDF per group sequentially (user will get multiple downloads)
+  DB.groups.forEach((g, i) => {
+    activeGroupIndex = i;
+    exportGroupPDF();
+  });
+}
+
+/* ------------- Helpers & Misc ------------- */
+function escapeHtml(text){ return String(text).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+function deleteGroup(i){ if(!confirm('Delete group?')) return; DB.groups.splice(i,1); saveDB(); }
+function duplicateGroup(i){
+  const g = JSON.parse(JSON.stringify(DB.groups[i]));
+  g.id = uid(); g.name = g.name + ' (copy)';
+  DB.groups.push(g); saveDB();
+}
+function downloadGroupJSON(i){
+  const data = JSON.stringify(DB.groups[i], null, 2);
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([data],{type:'application/json'}));
+  a.download = DB.groups[i].name.replace(/\s+/g,'_') + '.json';
+  a.click();
+}
+function clearAll(){
+  if(!confirm('Clear all app data? This cannot be undone.')) return;
+  localStorage.removeItem('premium_expense_db'); location.reload();
+}
+
+/* ------------- Utilities to apply recurrence for all groups when user requests ------------- */
+function applyAllRecurrences(){ applyAllRecurrencesImpl(); }
+function applyAllRecurrencesImpl(){
+  DB.groups.forEach((g, idx) => applyRecurrenceForGroup(idx));
+  saveDB();
+  alert('Recurrences applied (new expenses created).');
+}
+
+/* ------------- Init: example data if empty ------------- */
+if(DB.groups.length===0){
+  DB.groups.push({
+    id: uid(), name: 'Roommates', members:[
+      {id:uid(),name:'Aman'}, {id:uid(),name:'Riya'}, {id:uid(),name:'Vanshu'}
+    ],
+    expenses: [
+      { id:uid(), name:'Groceries', amount: 1200, paidById: null, paidBy:'Aman', category:'food', split:{}, splitCustom:false, recur:'none' }
+    ]
+  });
+  // set the paidById correctly for initial expense
+  DB.groups[0].expenses[0].paidById = DB.groups[0].members[0].id;
+  saveDB();
+}
+
+/* initial render */
+renderDashboard();
+
+/* Small helpers for exposing functions to buttons */
+window.openGroupModal = () => openGroupModal(null);
+window.openManage = openManage;
+window.openExpenseModal = openExpenseModal;
+window.openMembersEditor = openMembersEditor;
+window.showGroupSummary = showGroupSummary;
+window.applyAllRecurrences = applyAllRecurrencesImpl;
+window.exportAllPDF = exportAllPDF;
+window.deleteGroup = deleteGroup;
+window.downloadGroupJSON = downloadGroupJSON;
+
+/* ensure splitInputs initial state when modal opens for adding new expense */
+document.getElementById('expenseModal').addEventListener('transitionend', ()=>{ /* placeholder */ });
+
+/* re-render when search changes */
+searchInput.addEventListener('input', renderDashboard);
+</script>
+</body>
+</html>
